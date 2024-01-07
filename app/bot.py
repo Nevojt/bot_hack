@@ -1,11 +1,13 @@
 import asyncio
+import os
 from telegram.ext import CommandHandler, Application, MessageHandler, filters, ContextTypes
 from telegram import Update
 import random
-from config import settings
+from dotenv import load_dotenv
 from expressions import text_to_list, text
 
-bot = settings.token
+load_dotenv()
+bot = os.getenv('TOKEN')
 bot_name = '@Hhhh_Tttt_bot'
 
 quotes_list = text_to_list(text)
