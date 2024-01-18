@@ -1,4 +1,5 @@
 import asyncio
+import httpx
 import os
 from telegram.ext import CommandHandler, Application, MessageHandler, filters, ContextTypes
 from telegram import Update
@@ -49,7 +50,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message_type: str = update.message.chat.type
     text: str = update.message.text
     
-    print(f"User ({update.message.chat.id}) in {message_type}: {text}")
+    print(f"Received message: {text}")
+
+    if bot_name in text:
+        text = text.replace(bot_name, "").strip()
+
+    if text:
+        response = await ask_openai(text)
+        await update.message.reply_text(response or "Не вдалося обробити ваш запит.")
+    else:
+        await update.message.reply_text("Будь ласка, надішліть текстове повідомлення.")
+
+
     
     if message_type == "group":
         
@@ -72,26 +84,32 @@ async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
 
 
-def ask_openai(prompt):
-    api_key = os.getenv('OPENAI_API_KEY')  # Замініть на ваш API ключ
-    headers = {
-        'Authorization': f'Bearer {api_key}',
-        'Content-Type': 'application/json'
-    }
+async def ask_openai(prompt, max_tokens=150):
+    openai_api_key = os.getenv('OPENAI_API_KEY')
+    headers = {'Authorization': f'Bearer {openai_api_key}'}
     data = {
-        'model': 'text-davinci-003',  # Виберіть модель (наприклад, text-davinci-003)
-        'prompt': prompt,
-        'max_tokens': 150
+        'model': 'gpt-4-vision-preview',
+        'messages': [{'role': 'user', 'content': prompt}],
+        'max_tokens': max_tokens
     }
-    response = requests.post('https://api.openai.com/v1/engines/text-davinci-003/completions',
-                             headers=headers, json=data)
-    response_json = response.json()
-    return response_json.get('choices', [{}])[0].get('text', '').strip()
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post('https://api.openai.com/v1/chat/completions', headers=headers, json=data)
+            response.raise_for_status()
+            response_json = response.json()
+            latest_message = response_json.get('choices', [{}])[0].get('message', {}).get('content', '').strip()
+            return latest_message
+        except httpx.HTTPStatusError as e:
+            print(f"HTTP error occurred: {e}")
+            print(f"Response body: {e.response.text}")
+            return None
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return None
 
-# Приклад використання
-prompt = 'Translate the following English text to French: Hello, how are you?'
-response = ask_openai(prompt)
-print(response)
+
+
 
     
     
@@ -108,7 +126,7 @@ if __name__ == "__main__":
     app.add_handler(MessageHandler(filters.TEXT, handle_message))
     
     # Errors
-    app.add_error_handler(error)
+    app.add_error_handler(lambda u, c: print(f"Error: {c.error}"))
     
     #  Poll the bot
     print("Polling...")
