@@ -5,6 +5,7 @@ from telegram import Update
 import random
 from dotenv import load_dotenv
 from expressions import text_to_list, text
+import requests
 
 load_dotenv()
 bot = os.getenv('TOKEN')
@@ -66,6 +67,32 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(f"Update {update} caused error: {context.error}")
+    
+    
+    
+
+
+def ask_openai(prompt):
+    api_key = os.getenv('OPENAI_API_KEY')  # Замініть на ваш API ключ
+    headers = {
+        'Authorization': f'Bearer {api_key}',
+        'Content-Type': 'application/json'
+    }
+    data = {
+        'model': 'text-davinci-003',  # Виберіть модель (наприклад, text-davinci-003)
+        'prompt': prompt,
+        'max_tokens': 150
+    }
+    response = requests.post('https://api.openai.com/v1/engines/text-davinci-003/completions',
+                             headers=headers, json=data)
+    response_json = response.json()
+    return response_json.get('choices', [{}])[0].get('text', '').strip()
+
+# Приклад використання
+prompt = 'Translate the following English text to French: Hello, how are you?'
+response = ask_openai(prompt)
+print(response)
+
     
     
 if __name__ == "__main__":
