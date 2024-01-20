@@ -47,7 +47,6 @@ def handle_response(text: str) -> str:
     
     
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    message_type: str = update.message.chat.type
     text: str = update.message.text
     
     print(f"Received message: {text}")
@@ -57,15 +56,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if text:
             response = await ask_openai(text)
-            await update.message.reply_text(response or "Не вдалося обробити ваш запит.")
+            if response:
+                await update.message.reply_text(response)
+            else:
+                await update.message.reply_text("Не вдалося обробити ваш запит.")
         else:
             await update.message.reply_text("Будь ласка, надішліть текстове повідомлення.")
-
     else:
         return
-        
-    print("Bot", response)
-    await update.message.reply_text(response)       
+      
     
     
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
