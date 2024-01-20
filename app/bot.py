@@ -10,7 +10,7 @@ import requests
 
 load_dotenv()
 bot = os.getenv('TOKEN')
-bot_name = '@Hhhh_Tttt_bot'
+bot_name = '@bot'
 
 quotes_list = text_to_list(text)
 print(bot_name)
@@ -47,34 +47,25 @@ def handle_response(text: str) -> str:
     
     
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    message_type: str = update.message.chat.type
     text: str = update.message.text
-    
     print(f"Received message: {text}")
 
+    # Перевіряємо, чи повідомлення містить згадку бота
     if bot_name in text:
+        # Видаляємо згадку бота з тексту
         text = text.replace(bot_name, "").strip()
 
-    if text:
-        response = await ask_openai(text)
-        await update.message.reply_text(response or "Не вдалося обробити ваш запит.")
-    else:
-        await update.message.reply_text("Будь ласка, надішліть текстове повідомлення.")
-
-
-    
-    if message_type == "group":
-        
-        if bot_name in text:
-            new_text: str = text.replace(bot_name, "").strip()
-            response: str = handle_response(new_text)
+        if text:
+            # Обробляємо текстове повідомлення
+            response = handle_response(text)
+            await update.message.reply_text(response)
         else:
-            return
+            # Якщо текст відсутній після видалення згадки бота
+            await update.message.reply_text("Будь ласка, надішліть текстове повідомлення.")
     else:
+        # Якщо повідомлення не містить згадки бота, просто повертаємо управління
         return
-        
-    print("Bot", response)
-    await update.message.reply_text(response)       
+       
     
     
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
