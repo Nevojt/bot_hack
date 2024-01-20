@@ -47,25 +47,25 @@ def handle_response(text: str) -> str:
     
     
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    message_type: str = update.message.chat.type
     text: str = update.message.text
+    
     print(f"Received message: {text}")
 
-    # Перевіряємо, чи повідомлення містить згадку бота
     if bot_name in text:
-        # Видаляємо згадку бота з тексту
         text = text.replace(bot_name, "").strip()
 
         if text:
-            # Обробляємо текстове повідомлення
-            response = handle_response(text)
-            await update.message.reply_text(response)
+            response = await ask_openai(text)
+            await update.message.reply_text(response or "Не вдалося обробити ваш запит.")
         else:
-            # Якщо текст відсутній після видалення згадки бота
             await update.message.reply_text("Будь ласка, надішліть текстове повідомлення.")
+
     else:
-        # Якщо повідомлення не містить згадки бота, просто повертаємо управління
         return
-       
+        
+    print("Bot", response)
+    await update.message.reply_text(response)       
     
     
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
